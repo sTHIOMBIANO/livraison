@@ -319,7 +319,7 @@ class AllLivraisonsResource(Resource):
                 "date_livre": str(row[3])
             })
 
-        return livraisons
+        return jsonify(livraisons)
 
 
 # REGISTER RESOURCES
