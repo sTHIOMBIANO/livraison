@@ -281,7 +281,7 @@ class AllLivraisonsResource(Resource):
             }
         }
     })
-    @token_required
+    #@token_required
     def get(self):
 
         conn = get_db_connection()
@@ -319,7 +319,7 @@ class AllLivraisonsResource(Resource):
                 "date_livre": str(row[3])
             })
 
-        return jsonify(livraisons)
+        return livraisons
 
 
 # REGISTER RESOURCES
