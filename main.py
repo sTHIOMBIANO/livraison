@@ -4,11 +4,13 @@ from functools import wraps
 from flask import Flask, jsonify, request, make_response
 import requests
 import os
-import psycopg2
+#import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime
 from flasgger import Swagger, swag_from
 from flask_restful import Api, Resource
+import sqlite3
+
 
 
 load_dotenv()
@@ -32,14 +34,37 @@ VENTE_SERVICE_URL =  os.environ.get("VENTE_SERVICE_URL")
 
 
 # connexion DB
+# def get_db_connection():
+#     conn = psycopg2.connect(
+#         host=os.environ['DB_HOST'],
+#         database='livraison',
+#         user=os.environ['DB_USERNAME'],
+#         password=os.environ['DB_PASSWORD']
+#     )
+#     return conn
+
+
 def get_db_connection():
-    conn = psycopg2.connect(
-        host=os.environ['DB_HOST'],
-        database='livraison',
-        user=os.environ['DB_USERNAME'],
-        password=os.environ['DB_PASSWORD']
-    )
+    conn = sqlite3.connect("livraison.db")
+    conn.row_factory = sqlite3.Row
     return conn
+
+
+def init_db():
+    conn = get_db_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS livraison (
+            id_livraison INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_utilisateur INTEGER,
+            id_vente INTEGER,
+            date_livre TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
 
 
 def token_required(f):
@@ -163,9 +188,9 @@ class LivrerResource(Resource):
 
         cur.execute("""
             INSERT INTO livraison (id_utilisateur, id_vente, date_livre)
-            VALUES (%s, %s, %s)
+            VALUES (?, ?, ?)
         """, (
-            1,  # current_user_id (à remplacer par l'ID réel de l'utilisateur connecté)
+            1,
             vente_id,
             datetime.now()
         ))
@@ -211,9 +236,10 @@ class MesLivraisonsResource(Resource):
         cur.execute("""
             SELECT id_livraison, id_vente, date_livre
             FROM livraison
-            WHERE id_utilisateur = %s
+            WHERE id_utilisateur = ?
             ORDER BY date_livre DESC
         """, (current_user_id,))
+
 
         rows = cur.fetchall()
 
@@ -304,4 +330,4 @@ api.add_resource(AllLivraisonsResource, "/livraisons")
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="192.168.11.175", port=5000)
+    app.run(debug=True)
